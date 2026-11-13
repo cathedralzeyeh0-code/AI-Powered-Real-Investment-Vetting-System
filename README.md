@@ -25,7 +25,7 @@ An **n8n** automation that screens property listings like an investment analyst.
 - Open- Meteo API
 - JavaScript
 
-## 💡 Lesson Learned
+## 💡 What I Learned
 - How to turn a business problem into an automation
 - How to write a prompt that produces usable ouput
 - How to handle messy AI output
