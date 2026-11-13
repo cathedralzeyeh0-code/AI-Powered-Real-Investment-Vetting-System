@@ -1,0 +1,635 @@
+{
+  "name": "AI-Powered Real Estate Investment Vetting System",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "7b101d15-8307-455a-8656-7ad327f735f7",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1R6jvMW6Pc8eU_us0HYPw2LwkJ1Edx_AX-b-5xJ3ZrD4",
+          "mode": "list",
+          "cachedResultName": "Dummy Data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R6jvMW6Pc8eU_us0HYPw2LwkJ1Edx_AX-b-5xJ3ZrD4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 752403581,
+          "mode": "list",
+          "cachedResultName": "Dummy Data for Workflow Testing",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R6jvMW6Pc8eU_us0HYPw2LwkJ1Edx_AX-b-5xJ3ZrD4/edit#gid=752403581"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "982db228-a6a9-4cad-ab46-33004795681c",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "okGvOspT0RXT7dCl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "Property Address",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "ca3c9da7-09cf-4932-96da-60db1ab94638",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "url": "https://api.open-meteo.com/v1/forecast?latitude=30.26&longitude=-97.74&current_weather=true",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        640,
+        -176
+      ],
+      "id": "775de93c-cb9c-42f7-86ac-9badf6048613",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "83888e42-1575-43e2-94e0-320bde36a4e0",
+              "name": "PricePerSqFt",
+              "value": "={{ $('Split Out').item.json[\"Listing Price\"] / $('Split Out').item.json[\"Square Footage\"] }}",
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        832,
+        0
+      ],
+      "id": "7aef0557-35ad-45d5-b50e-73c2c5477e3b",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e6397d19-7945-4890-bb87-de12fe91b498",
+              "leftValue": "={{ $json.PricePerSqFt }}",
+              "rightValue": 1000,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "eaf785b7-5a41-4903-a0e1-e4eaafce9abd",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Act as a Senior Real Estate Investment Analyst.\n\nProperty Details:\n\nAddress: {{ $('Split Out').item.json[\"Property Address\"] }}\n\nInvestment Metric: ${{ $json[\"PricePerSqFt\"] }} per square foot.\n\nDescription: {{ $('Split Out').item.json[\"Description\"] }}\n\nCurrent Weather context: {{ $json[\"current_weather\"][\"temperature\"] }}°C\n\nInstructions:\n\nIdentify Red Flags: Look for words in the description like 'as-is', 'foundation issues', 'cash only', or 'tenant occupied' that increase risk.\n\nAssign a Deal Score: Give a score from 1 (Avoid) to 10 (Must Buy) based on the description and price per sq ft.\n\nProvide Reasoning: Write 2 concise sentences explaining your score.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "3714d43c-0cf8-4678-aaff-cebd327b172b",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        208
+      ],
+      "id": "78d078e7-cb91-48f5-8b5e-b8fd91d8c78c",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "JaWkKVzDRxpKMn67",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7bbc0ac2-a4da-4e98-b893-c299cdcd5ef9",
+              "name": "AI_Verdict",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1600,
+        0
+      ],
+      "id": "0e79a263-79ff-44fb-b7ab-a05f27150635",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1R6jvMW6Pc8eU_us0HYPw2LwkJ1Edx_AX-b-5xJ3ZrD4",
+          "mode": "list",
+          "cachedResultName": "Properties",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R6jvMW6Pc8eU_us0HYPw2LwkJ1Edx_AX-b-5xJ3ZrD4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 752403581,
+          "mode": "list",
+          "cachedResultName": "Property data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R6jvMW6Pc8eU_us0HYPw2LwkJ1Edx_AX-b-5xJ3ZrD4/edit#gid=752403581"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Property Address": "={{ $('Split Out').item.json[\"Property Address\"] }}",
+            "AI Analysis": "={{ $json.AI_Verdict }}",
+            "Deal Score": "={{ $json.AI_Verdict.match(/Deal Score:\\**\\s*(\\d+)/)?.[1] || \"N/A\" }}"
+          },
+          "matchingColumns": [
+            "Property Address"
+          ],
+          "schema": [
+            {
+              "id": "Property Address",
+              "displayName": "Property Address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Listing Price",
+              "displayName": "Listing Price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Square Footage",
+              "displayName": "Square Footage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Deal Score",
+              "displayName": "Deal Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Analysis",
+              "displayName": "AI Analysis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1808,
+        0
+      ],
+      "id": "c05ec89b-b3de-42e4-a35a-d83a5b5c841a",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "okGvOspT0RXT7dCl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d104c7a6-0d35-4a1b-8b92-40276723ae36",
+              "leftValue": "={{ $json[\"Deal Score\"] }}",
+              "rightValue": "9/10",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "821e5be1-bb37-4639-a950-9a2f4d0a5692",
+              "leftValue": "={{ $json[\"Deal Score\"] }}",
+              "rightValue": "10/10",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2016,
+        0
+      ],
+      "id": "d2907bdb-028c-46e3-b265-07b0454eeb1d",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sendTo": "blaycathy@gmail.com",
+        "subject": "=10/10 DEAL: {{ $json[\"Property Address\"] }}",
+        "message": "=Gemini has identified a high-value property!\nScore: {{ $json[\"Deal Score\"] }}\nAnalysis: {{ $json[\"AI Analysis\"] }}\nLocal Temp: {{ $json[\"current_weather\"][\"temperature\"] }}°C",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2448,
+        -96
+      ],
+      "id": "d757c13a-1e25-43fc-b5a1-8f96c36bf557",
+      "name": "Send a message",
+      "webhookId": "395c921d-e7fe-4e88-b859-8cf15007a752",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "mQXXDOViIufMVnH5",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2208,
+        -224
+      ],
+      "id": "cf3c85df-a980-4423-856d-c6c7da0cc83e",
+      "name": "Merge"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2656,
+        -96
+      ],
+      "id": "1bbaa83b-b21a-451d-9d02-5b452abb397a",
+      "name": "Wait",
+      "webhookId": "4d3fe64f-ec9c-4fcd-882c-f06bb84aac1b"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "486c6503-17e1-4914-83b2-0347e3115bfb",
+              "name": "Status",
+              "value": "Low Score - No Action Taken",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2224,
+        96
+      ],
+      "id": "b2aff530-485d-4f90-b0f7-e09a3e14d554",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2592,
+        160
+      ],
+      "id": "1da76f2d-face-40a2-bc9d-a53dac756b30",
+      "name": "Final Project Summary"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Final Project Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Final Project Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "c1f4dc58-1407-4757-b407-500f9c0fcd07",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6c8b1ea3aa71e1ec20e2fc64f584d33cd005b70aa38fc669abed6631de2384c6"
+  },
+  "id": "7PWckViTmYwWeak82vA3h",
+  "tags": []
+}
