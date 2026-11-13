@@ -33,6 +33,7 @@ An **n8n** automation that screens property listings like an investment analyst.
 
 ## 🔗 Preview
 ![Automation](https://github.com/cathedralzeyeh0-code/AI-Powered-Real-Investment-Vetting-System/blob/main/Screenshot%202026-11-11%20102308.png)
+![Gmail](
 
 
 
